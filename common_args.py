@@ -20,7 +20,7 @@ def add_dataset_args(parser):
     parser.add_argument("--cov", type=float, required=False,
                         default=0.0, help="Coverage of optimal arm")
 
-    parser.add_argument("--env", type=str, required=True, help="Environment")
+    parser.add_argument("--env", type=str, help="Environment", default="bandit")
     parser.add_argument("--env_id_start", type=int, required=False,
                         default=-1, help="Start index of envs to sample")
     parser.add_argument("--env_id_end", type=int, required=False,
@@ -55,5 +55,5 @@ def add_eval_args(parser):
     parser.add_argument("--hor", type=int, required=False,
                         default=-1, help="Episode horizon (for mdp)")
     parser.add_argument("--n_eval", type=int, required=False,
-                        default=100, help="Number of eval trajectories")
+                        default=20, help="Number of eval trajectories")
     parser.add_argument("--save_video", default=False, action='store_true')

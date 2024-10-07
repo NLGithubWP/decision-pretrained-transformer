@@ -27,12 +27,17 @@ def rollin_bandit(env, cov, orig=False):
 
     exp = False
     if exp == False:
+        # blended probability distribution. The logic behind this approach is to balance exploration and exploitation during data generation.
         cov = np.random.choice([0.0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0])
+        # 1st distribution
+        # Dirichlet distribution is often used to generate probabilities that sum to 1, and by setting alpha to be a vector of ones (np.ones(env.dim)), each action is given an equal prior likelihood.
         alpha = np.ones(env.dim)
         probs = np.random.dirichlet(alpha)
+        # 2nd distribution
         probs2 = np.zeros(env.dim)
         rand_index = np.random.choice(np.arange(env.dim))
         probs2[rand_index] = 1.0
+
         probs = (1 - cov) * probs + cov * probs2
     else:
         raise NotImplementedError
@@ -149,7 +154,7 @@ def rollin_mdp_miniworld(env, horizon, rollin_type, target_shape=(25, 25, 3)):
         rewards.append(rew)
 
     observations = np.array(observations)
-    states = np.array(pos_and_dirs)[..., 2:]    # only use dir, not pos
+    states = np.array(pos_and_dirs)[..., 2:]  # only use dir, not pos
     actions = np.array(actions)
     rewards = np.array(rewards)
     return observations, states, actions, rewards
@@ -165,6 +170,7 @@ def generate_bandit_histories_from_envs(envs, n_hists, n_samples, cov, type):
                 context_next_states,
                 context_rewards,
             ) = rollin_bandit(env, cov=cov)
+
             for k in range(n_samples):
                 query_state = np.array([1])
                 optimal_action = env.opt_a
@@ -180,10 +186,6 @@ def generate_bandit_histories_from_envs(envs, n_hists, n_samples, cov, type):
                 }
                 trajs.append(traj)
     return trajs
-
-
-
-
 
 
 def generate_mdp_histories_from_envs(envs, n_hists, n_samples, rollin_type):
@@ -236,7 +238,7 @@ def generate_linear_bandit_histories(n_envs, dim, lin_d, horizon, var, **kwargs)
     data_type = kwargs['data_type']
 
     print("Generating histories...")
-    if data_type=='thompson':
+    if data_type == 'thompson':
         context_states_all, context_actions_all, context_next_states_all, context_rewards_all = [], [], [], []
         for j in range(n_hists):
             context_states, context_actions, context_next_states, context_rewards = rollin_linear_bandit_vec(envs)
@@ -250,14 +252,13 @@ def generate_linear_bandit_histories(n_envs, dim, lin_d, horizon, var, **kwargs)
         context_next_states_all = np.stack(context_next_states_all, axis=1)
         context_rewards_all = np.stack(context_rewards_all, axis=1)
 
-
     trajs = []
     for i, env in enumerate(envs):
-        print('Generating linear bandit histories for env {}/{}'.format(i+1, n_envs))
+        print('Generating linear bandit histories for env {}/{}'.format(i + 1, n_envs))
         for j in range(n_hists):
-            if data_type=='uniform':
+            if data_type == 'uniform':
                 context_states, context_actions, context_next_states, context_rewards = rollin_bandit(env, cov=0.0)
-            elif data_type=='thompson':
+            elif data_type == 'thompson':
                 context_states = context_states_all[i, j]
                 context_actions = context_actions_all[i, j]
                 context_next_states = context_next_states_all[i, j]
@@ -282,9 +283,6 @@ def generate_linear_bandit_histories(n_envs, dim, lin_d, horizon, var, **kwargs)
                 }
                 trajs.append(traj)
     return trajs
-
-
-
 
 
 def generate_darkroom_histories(goals, dim, horizon, **kwargs):
@@ -335,7 +333,7 @@ def generate_miniworld_histories(env_ids, image_dir, n_hists, n_samples, horizon
 
                 traj = {
                     'query_image': obs,
-                    'query_state': env.agent.dir_vec[[0, -1]], # only use dir, not pos
+                    'query_state': env.agent.dir_vec[[0, -1]],  # only use dir, not pos
                     'optimal_action': one_hot_action,
                     'context_images': filepath,
                     'context_states': context_states,
@@ -369,7 +367,6 @@ if __name__ == '__main__':
     env_id_start = args['env_id_start']
     env_id_end = args['env_id_end']
     lin_d = args['lin_d']
-
 
     n_train_envs = int(.8 * n_envs)
     n_test_envs = n_envs - n_train_envs
@@ -406,7 +403,7 @@ if __name__ == '__main__':
 
         config.update({'dim': dim, 'rollin_type': 'uniform'})
         goals = np.array([[(j, i) for i in range(dim)]
-                         for j in range(dim)]).reshape(-1, 2)
+                          for j in range(dim)]).reshape(-1, 2)
         np.random.RandomState(seed=0).shuffle(goals)
         train_test_split = int(.8 * len(goals))
         train_goals = goals[:train_test_split]
@@ -427,23 +424,21 @@ if __name__ == '__main__':
             env, n_envs, config, mode=1)
         eval_filepath = build_darkroom_data_filename(env, 100, config, mode=2)
 
-
     elif env == 'miniworld':
         import gymnasium as gym
         import miniworld
 
-        config.update({'rollin_type': 'uniform', 
-            'target_shape': (25, 25, 3),
-        })
+        config.update({'rollin_type': 'uniform',
+                       'target_shape': (25, 25, 3),
+                       })
 
         if env_id_start < 0 or env_id_end < 0:
             env_id_start = 0
             env_id_end = n_envs
 
         # make sure you don't just generate the same data when batching data collection
-        np.random.seed(0 + env_id_start)    
-        random.seed(0 + env_id_start)       
-
+        np.random.seed(0 + env_id_start)
+        random.seed(0 + env_id_start)
 
         env_ids = np.arange(env_id_start, env_id_end)
 
@@ -456,7 +451,6 @@ if __name__ == '__main__':
         test_filepath = build_miniworld_data_filename(
             env, env_id_start, env_id_end, config, mode=1)
         eval_filepath = build_miniworld_data_filename(env, 0, 100, config, mode=2)
-
 
         train_trajs = generate_miniworld_histories(
             train_env_ids,
@@ -473,7 +467,6 @@ if __name__ == '__main__':
 
     else:
         raise NotImplementedError
-
 
     if not os.path.exists('datasets'):
         os.makedirs('datasets', exist_ok=True)

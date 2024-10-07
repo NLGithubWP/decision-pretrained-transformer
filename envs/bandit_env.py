@@ -28,14 +28,19 @@ def sample_linear(arms, H, var):
 class BanditEnv(BaseEnv):
     def __init__(self, means, H, var=0.0, type='uniform'):
         opt_a_index = np.argmax(means)
+        # An array of reward expectations for each action
         self.means = means
+        # The index of the action (arm) with the highest expected reward.
         self.opt_a_index = opt_a_index
         self.opt_a = np.zeros(means.shape)
         self.opt_a[opt_a_index] = 1.0
+        # The number of available actions (arms).
         self.dim = len(means)
         self.observation_space = gym.spaces.Box(low=1, high=1, shape=(1,))
         self.action_space = gym.spaces.Box(low=0, high=1, shape=(self.dim,))
         self.state = np.array([1])
+
+        # Variance of the noise added to the reward when an action is selected
         self.var = var
         self.dx = 1
         self.du = self.dim
@@ -47,6 +52,7 @@ class BanditEnv(BaseEnv):
         self.H = 1
 
     def get_arm_value(self, u):
+        # calculates the expected reward for a given action u
         return np.sum(self.means * u)
 
     def reset(self):
@@ -86,6 +92,7 @@ class BanditEnvVec(BaseEnv):
     """
     Vectorized bandit environment.
     """
+
     def __init__(self, envs):
         self._envs = envs
         self._num_envs = len(envs)
@@ -153,8 +160,6 @@ class BanditEnvVec(BaseEnv):
         return np.array(values)
 
 
-
-
 class LinearBanditEnv(BanditEnv):
     def __init__(self, theta, arms, H, var=0.0):
         self.theta = theta
@@ -170,7 +175,7 @@ class LinearBanditEnv(BanditEnv):
         self.var = var
         self.dx = 1
         self.du = self.dim
-        
+
         self.H_context = H
         self.H = 1
 

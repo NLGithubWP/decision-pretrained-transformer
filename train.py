@@ -1,11 +1,11 @@
 import torch.multiprocessing as mp
+
 if mp.get_start_method(allow_none=True) is None:
     mp.set_start_method('spawn', force=True)  # or 'forkserver'
 
 import argparse
 import os
 import time
-from IPython import embed
 
 import matplotlib.pyplot as plt
 import torch
@@ -29,7 +29,6 @@ from utils import (
 )
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 if __name__ == '__main__':
     if not os.path.exists('figs/loss'):
@@ -66,11 +65,24 @@ if __name__ == '__main__':
     num_epochs = args['num_epochs']
     seed = args['seed']
     lin_d = args['lin_d']
-    
+
     tmp_seed = seed
     if seed == -1:
         tmp_seed = 0
 
+    # for testing only
+    env = "bandit"
+    n_envs = 10
+    horizon = 50
+    dim = 5
+    state_dim = dim
+    action_dim = dim
+    var = 0.3
+    cov = 0.0
+    lr = 0.0001
+    n_layer = 4
+    n_head = 4
+    shuffle = True
 
     torch.manual_seed(tmp_seed)
     if torch.cuda.is_available():
@@ -82,7 +94,8 @@ if __name__ == '__main__':
     random.seed(tmp_seed)
 
     if shuffle and env == 'linear_bandit':
-        raise Exception("Are you sure you want to shuffle on the linear bandit? Data collected from an adaptive algorithm in a stochastic setting can bias the learner if shuffled.")
+        raise Exception(
+            "Are you sure you want to shuffle on the linear bandit? Data collected from an adaptive algorithm in a stochastic setting can bias the learner if shuffled.")
 
     dataset_config = {
         'n_hists': n_hists,
@@ -153,7 +166,7 @@ if __name__ == '__main__':
         filename = build_darkroom_model_filename(env, model_config)
 
     elif env == 'miniworld':
-        state_dim = 2   # direction vector is 2D, no position included
+        state_dim = 2  # direction vector is 2D, no position included
         action_dim = 4
 
         dataset_config.update({'rollin_type': 'uniform'})
@@ -206,6 +219,7 @@ if __name__ == '__main__':
     log_filename = f'figs/loss/{filename}_logs.txt'
     with open(log_filename, 'w') as f:
         pass
+
     def printw(string):
         """
         A drop-in replacement for print that also writes to a log file.
@@ -218,8 +232,6 @@ if __name__ == '__main__':
             print(string, file=f)
 
 
-
-
     if env == 'miniworld':
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -227,16 +239,13 @@ if __name__ == '__main__':
                                  std=[0.229, 0.224, 0.225])
         ])
 
-
-
         params.update({'num_workers': 16,
-                'prefetch_factor': 2,
-                'persistent_workers': True,
-                'pin_memory': True,
-                'batch_size': 64,
-                'worker_init_fn': worker_init_fn,
-            })
-
+                       'prefetch_factor': 2,
+                       'persistent_workers': True,
+                       'pin_memory': True,
+                       'batch_size': 64,
+                       'worker_init_fn': worker_init_fn,
+                       })
 
         printw("Loading miniworld data...")
         train_dataset = ImageDataset(paths_train, config, transform)
@@ -282,7 +291,6 @@ if __name__ == '__main__':
         printw(f"\tTest loss: {test_loss[-1]}")
         printw(f"\tEval time: {end_time - start_time}")
 
-
         # TRAINING
         epoch_train_loss = 0.0
         start_time = time.time()
@@ -308,11 +316,10 @@ if __name__ == '__main__':
         printw(f"\tTrain loss: {train_loss[-1]}")
         printw(f"\tTrain time: {end_time - start_time}")
 
-
         # LOGGING
         if (epoch + 1) % 50 == 0 or (env == 'linear_bandit' and (epoch + 1) % 10 == 0):
             torch.save(model.state_dict(),
-                       f'models/{filename}_epoch{epoch+1}.pt')
+                       f'models/{filename}_epoch{epoch + 1}.pt')
 
         # PLOTTING
         if (epoch + 1) % 10 == 0:
